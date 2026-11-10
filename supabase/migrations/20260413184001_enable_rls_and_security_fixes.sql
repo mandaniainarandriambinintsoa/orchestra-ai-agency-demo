@@ -1,0 +1,2 @@
+-- Existing migration from the shared n8n project.
+-- The SQL is intentionally omitted from this public application repository.

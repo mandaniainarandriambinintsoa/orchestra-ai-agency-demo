@@ -1,111 +1,113 @@
+import "server-only";
+
 import { z } from "zod";
 import { getServerEnv } from "@/lib/env";
 
-export const qualificationInputSchema = z.object({
-  company: z.string().trim().min(2).max(160),
-  sector: z.string().trim().min(2).max(120),
-  city: z.string().trim().min(2).max(120).optional(),
+export const prospectIntakeSchema = z.object({
+  fullName: z.string().trim().min(2).max(160),
+  email: z.string().trim().email().max(254),
+  companyName: z.string().trim().max(180).optional().default(""),
+  request: z.string().trim().min(10).max(3_000),
 });
 
-export type QualificationInput = z.infer<typeof qualificationInputSchema>;
+export const chatInputSchema = z.object({
+  scenario: z.enum(["colis", "dentiste", "garagiste"]),
+  sessionId: z.string().trim().min(8).max(120),
+  userMessage: z.string().trim().min(1).max(2_000),
+});
 
-const n8nQualificationSchema = z.object({
-  leads: z.array(
-    z.object({
-      company: z.string(),
-      score: z.coerce.number().min(0).max(100),
-      tier: z.string(),
-      reasoning: z.string(),
-      hooks: z.array(z.string()).default([]),
-    }),
-  ),
-  count: z.number(),
+const qualificationSchema = z.object({
+  interested: z.boolean(),
+  interestLevel: z.enum(["high", "medium", "low"]),
+  subject: z.string().trim().min(2).max(200),
+  score: z.coerce.number().int().min(0).max(100),
+  confidence: z.coerce.number().int().min(0).max(100),
+  summary: z.string().trim().min(2).max(2_000),
+  nextAction: z.string().trim().min(2).max(1_000),
+  tags: z.array(z.string().trim().min(1).max(60)).max(8).default([]),
+});
+
+const chatResponseSchema = z.object({
+  reply: z.string().trim().min(1).max(20_000),
+  sessionId: z.string(),
+  scenario: z.enum(["colis", "dentiste", "garagiste"]),
   generatedAt: z.string(),
 });
 
-export type QualificationResult = {
-  correlationId: string;
-  origin: "demo" | "n8n";
-  score: number;
-  tier: "cold" | "warm" | "hot";
-  reasoning: string;
-  hooks: string[];
-};
+const personalizeResponseSchema = z.object({
+  variants: z.object({
+    email: z.object({ subject: z.string(), body: z.string() }),
+    inmail: z.object({ subject: z.string(), body: z.string() }),
+    connection: z.object({ body: z.string() }),
+  }),
+  generatedAt: z.string(),
+});
 
-function buildDemoResult(
-  input: QualificationInput,
-  correlationId: string,
-): QualificationResult {
-  const seed = [...`${input.company}:${input.sector}:${input.city ?? ""}`].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  );
-  const score = 55 + (seed % 36);
-  return {
-    correlationId,
-    origin: "demo",
-    score,
-    tier: score >= 80 ? "hot" : score >= 60 ? "warm" : "cold",
-    reasoning:
-      "Score de démonstration calculé localement. Aucun fournisseur IA ni workflow n8n n’a été appelé.",
-    hooks: [
-      `Réduire les tâches manuelles dans le secteur ${input.sector}.`,
-      `Centraliser le suivi commercial de ${input.company}.`,
-    ],
-  };
-}
-
-export async function qualifyProspect(
-  input: QualificationInput,
-  correlationId: string,
-): Promise<QualificationResult> {
+function getWebhookConfig(path: string | undefined) {
   const env = getServerEnv();
-  if (env.DEMO_MODE === "true") return buildDemoResult(input, correlationId);
-
-  if (
-    env.ENABLE_N8N_QUALIFICATION !== "true" ||
-    !env.N8N_BASE_URL ||
-    !env.N8N_API_KEY ||
-    !env.N8N_PROSPECT_SEARCH_WEBHOOK_PATH
-  ) {
-    throw new Error("N8N_QUALIFICATION_NOT_CONFIGURED");
+  const apiKey = env.N8N_WEBHOOK_API_KEY ?? env.N8N_API_KEY;
+  if (!env.N8N_BASE_URL || !apiKey || !path) {
+    throw new Error("N8N_WEBHOOK_NOT_CONFIGURED");
   }
-
-  const endpoint = new URL(env.N8N_PROSPECT_SEARCH_WEBHOOK_PATH, env.N8N_BASE_URL);
+  const endpoint = new URL(path, env.N8N_BASE_URL);
   if (endpoint.origin !== new URL(env.N8N_BASE_URL).origin) {
     throw new Error("N8N_ENDPOINT_ORIGIN_MISMATCH");
   }
+  return { endpoint, apiKey };
+}
 
+async function postWebhook(path: string | undefined, payload: unknown, correlationId: string) {
+  const { endpoint, apiKey } = getWebhookConfig(path);
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Api-Key": env.N8N_API_KEY,
+      "X-Api-Key": apiKey,
       "X-Correlation-Id": correlationId,
     },
-    body: JSON.stringify({
-      mode: "company",
-      company: input.company,
-      sector: input.sector,
-      city: input.city,
-      maxResults: 1,
-    }),
+    body: JSON.stringify(payload),
     cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(30_000),
   });
-
   if (!response.ok) throw new Error(`N8N_HTTP_${response.status}`);
-  const payload = n8nQualificationSchema.parse(await response.json());
-  const lead = payload.leads[0];
-  if (!lead) throw new Error("N8N_EMPTY_QUALIFICATION");
+  return response.json() as Promise<unknown>;
+}
 
-  const normalizedScore = Math.round(lead.score);
-  return {
+export async function qualifyIncomingProspect(
+  input: z.infer<typeof prospectIntakeSchema>,
+  prospectId: number,
+  correlationId: string,
+) {
+  const env = getServerEnv();
+  const payload = await postWebhook(
+    env.N8N_PROSPECT_QUALIFY_WEBHOOK_PATH,
+    { prospectId, ...input },
     correlationId,
-    origin: "n8n",
-    score: normalizedScore,
-    tier: normalizedScore >= 80 ? "hot" : normalizedScore >= 60 ? "warm" : "cold",
-    reasoning: lead.reasoning,
-    hooks: lead.hooks.slice(0, 3),
-  };
+  );
+  const candidate = z.object({ output: qualificationSchema }).or(qualificationSchema).parse(payload);
+  return "output" in candidate ? candidate.output : candidate;
+}
+
+export async function runConversation(
+  input: z.infer<typeof chatInputSchema>,
+  correlationId: string,
+) {
+  const env = getServerEnv();
+  return chatResponseSchema.parse(
+    await postWebhook(env.N8N_CHAT_WEBHOOK_PATH, input, correlationId),
+  );
+}
+
+export async function generateFollowUp(
+  lead: { name: string; company: string; email: string; request: string; summary?: string | null },
+  correlationId: string,
+) {
+  const env = getServerEnv();
+  return personalizeResponseSchema.parse(
+    await postWebhook(
+      env.N8N_PERSONALIZE_WEBHOOK_PATH,
+      { lead, tone: "consultatif", contexte: "Relance d'un prospect ayant demandé une automatisation IA" },
+      correlationId,
+    ),
+  );
 }

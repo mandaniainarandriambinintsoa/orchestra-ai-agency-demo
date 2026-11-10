@@ -9,8 +9,11 @@ const serverEnvSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().optional(),
   N8N_BASE_URL: optionalUrl,
   N8N_API_KEY: z.string().optional(),
-  N8N_WEBHOOK_SECRET: z.string().optional(),
-  N8N_PROSPECT_SEARCH_WEBHOOK_PATH: z.string().optional(),
+  N8N_WEBHOOK_API_KEY: z.string().optional(),
+  N8N_PROSPECT_QUALIFY_WEBHOOK_PATH: z.string().optional(),
+  N8N_CHAT_WEBHOOK_PATH: z.string().optional(),
+  N8N_PERSONALIZE_WEBHOOK_PATH: z.string().optional(),
+  CRON_SECRET: z.string().min(24).optional(),
   APP_ACTION_TOKEN: z.string().min(24).optional(),
   DEMO_MODE: z.enum(["true", "false"]).default("true"),
   ENABLE_N8N_QUALIFICATION: z.enum(["true", "false"]).default("false"),
@@ -28,9 +31,12 @@ export function getServerEnv(): ServerEnv {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
     N8N_BASE_URL: process.env.N8N_BASE_URL,
     N8N_API_KEY: process.env.N8N_API_KEY,
-    N8N_WEBHOOK_SECRET: process.env.N8N_WEBHOOK_SECRET,
-    N8N_PROSPECT_SEARCH_WEBHOOK_PATH:
-      process.env.N8N_PROSPECT_SEARCH_WEBHOOK_PATH,
+    N8N_WEBHOOK_API_KEY: process.env.N8N_WEBHOOK_API_KEY,
+    N8N_PROSPECT_QUALIFY_WEBHOOK_PATH:
+      process.env.N8N_PROSPECT_QUALIFY_WEBHOOK_PATH,
+    N8N_CHAT_WEBHOOK_PATH: process.env.N8N_CHAT_WEBHOOK_PATH,
+    N8N_PERSONALIZE_WEBHOOK_PATH: process.env.N8N_PERSONALIZE_WEBHOOK_PATH,
+    CRON_SECRET: process.env.CRON_SECRET,
     APP_ACTION_TOKEN: process.env.APP_ACTION_TOKEN,
     DEMO_MODE: process.env.DEMO_MODE,
     ENABLE_N8N_QUALIFICATION: process.env.ENABLE_N8N_QUALIFICATION,
@@ -50,8 +56,8 @@ export function getPublicIntegrationStatus() {
     n8n:
       Boolean(
         env.N8N_BASE_URL &&
-          env.N8N_API_KEY &&
-          env.N8N_PROSPECT_SEARCH_WEBHOOK_PATH,
+          (env.N8N_WEBHOOK_API_KEY ?? env.N8N_API_KEY) &&
+          env.N8N_PROSPECT_QUALIFY_WEBHOOK_PATH,
       ),
     liveQualification: env.ENABLE_N8N_QUALIFICATION === "true",
     externalSideEffects: env.ALLOW_EXTERNAL_SIDE_EFFECTS === "true",

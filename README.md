@@ -1,105 +1,82 @@
 # Orchestra — AI Automation Agency Demo
 
-Prototype SaaS de supervision pour une agence d'automatisation IA : CRM,
-conversations, rendez-vous, relances, agents n8n et gestion de stock.
+Prototype SaaS opérationnel pour superviser une agence d’automatisation IA :
+qualification de prospects, conversations, rendez-vous, relances et stock.
 
-Le projet est conçu comme un test technique professionnel. Il ne prétend pas être
-une plateforme de production et indique explicitement ce qui est simulé,
-configuré ou réellement vérifié.
+## Fonctionnalités
 
-## État actuel
-
-| Périmètre | État |
+| Périmètre | Fonctionnement |
 | --- | --- |
-| Dashboard responsive et navigation | Fonctionnel localement et sur Vercel |
-| Vue d'ensemble et graphiques | Données de démonstration |
-| Recherche et filtres CRM | Fonctionnels sur données locales |
-| Conversations, rendez-vous, relances | Interfaces de démonstration |
-| Agents n8n | Audit réel, aucune exécution depuis l'app |
-| Stock | Scénario et données de démonstration |
-| API de qualification | Résultat local en mode démo ; adaptateur n8n préparé |
-| Schéma PostgreSQL | Migration versionnée et appliquée au projet Supabase `n8n` |
-| Supabase distant | 12 tables `orchestra_*`, RLS forcé, accès navigateur révoqué |
-| GitHub public et Vercel | Publiés et vérifiés le 10 novembre 2026 |
+| Qualification | Formulaire → Supabase → agent IA n8n → score, intérêt, sujet, résumé et prochaine action |
+| Conversation | Scénarios colis, dentiste et garagiste via le workflow n8n Manda |
+| Rendez-vous | Disponibilités Google Calendar, réservation et confirmation email depuis l’agent conversationnel |
+| Relances | Génération manuelle et cron quotidien, avec validation humaine avant envoi |
+| Dashboard | Statistiques et journal d’activité lus depuis Supabase |
+| Stock | Produits réels, ajout, modification API, archivage, entrées/sorties atomiques et seuils |
 
 ## Stack
 
 - Next.js 16.4, React 19 et TypeScript strict
-- Tailwind CSS 4 et composants source compatibles shadcn/ui
-- Tabler Icons et Recharts
-- Zod pour les frontières d'entrée/sortie
-- Supabase/PostgreSQL avec migrations et RLS
-- n8n derrière un adaptateur serveur
+- Tailwind CSS 4 et Tabler Icons
+- Supabase/PostgreSQL avec migrations, contraintes et RLS
+- n8n Manda pour les agents IA
+- Zod aux frontières HTTP et n8n
+- Playwright pour les parcours desktop/mobile
 
 ## Démarrage local
 
 Prérequis : Node.js 24 et pnpm 10.
 
-```bash
+```powershell
 pnpm install
 Copy-Item .env.example .env.local
 pnpm dev
 ```
 
-Ouvrir `http://localhost:3000`. Les valeurs sûres par défaut conservent le mode
-démonstration et bloquent les effets externes.
+Toutes les clés Supabase et n8n sont utilisées côté serveur uniquement.
 
 ## Vérifications
 
-```bash
+```powershell
 pnpm lint
 pnpm typecheck
 pnpm build
-pnpm test:e2e
+pnpm exec playwright test
 ```
 
-Le test end-to-end reconstruit l'application en mode production, puis vérifie le
-dashboard desktop/mobile, le menu responsive, les filtres prospects et l'API de
-qualification en mode démonstration.
+Les tests navigateur interceptent les mutations afin de ne pas créer de données
+dans l’instance Supabase distante.
 
-La CLI Supabase 3.1.0 est épinglée au projet. Les commandes distantes doivent
-toujours préciser `--remote` :
+## Base de données
 
-```bash
+La CLI Supabase 3.1.0 est épinglée au projet. Les opérations distantes utilisent
+explicitement `--remote` :
+
+```powershell
 pnpm supabase migration list --remote
 pnpm supabase db push --remote --dry-run
 pnpm supabase db advisors --remote --type all
 ```
 
-Le projet partagé contient également le schéma interne n8n. Les tables de cette
-application sont donc préfixées par `orchestra_` et la migration ne modifie aucun
-objet n8n existant.
+Les tables applicatives sont préfixées par `orchestra_` afin de rester isolées
+du schéma interne n8n. Les rôles navigateur n’ont aucun droit direct ; les routes
+serveur utilisent la clé secrète Supabase. Les mouvements de stock passent par
+une fonction SQL atomique qui refuse les quantités négatives.
 
-## Sécurité et mode démo
+## Sécurité et limites du prototype
 
-- aucun secret n'est envoyé au navigateur ;
-- les URLs et clés n8n restent côté serveur ;
-- les relances, emails et calendriers réels sont désactivés ;
-- la qualification démo est déterministe et n'appelle aucun fournisseur ;
-- un jeton serveur est requis avant d'autoriser une qualification n8n hors démo ;
-- les tables Supabase ont RLS activé et aucun droit client par défaut ;
-- aucune donnée client réelle n'est incluse.
-
-## Documentation
-
-- [Audit n8n](docs/N8N_AUDIT.md)
-- [Architecture technique](docs/ARCHITECTURE.md)
-- [Direction visuelle](docs/DESIGN_SYSTEM.md)
-
-## Structure
-
-```text
-src/app/                  Pages et Route Handlers
-src/components/           Shell, composants UI et graphiques
-src/lib/                  Types, données démo, configuration et services
-supabase/migrations/      Schéma PostgreSQL versionné
-docs/                     Audit, architecture et design system
-```
+- validation stricte et taille de requête bornée ;
+- limitation de débit applicative par instance ;
+- secrets et appels n8n côté serveur ;
+- RLS forcé sur toutes les tables Orchestra ;
+- relances générées en `pending_approval`, sans envoi automatique ;
+- archivage des produits au lieu d’une suppression de l’historique ;
+- aucune authentification opérateur : avant une exploitation client réelle, il
+  faut ajouter l’authentification et une limitation de débit distribuée.
 
 ## Publication
 
 - Application : <https://orchestra-ai-agency-demo.vercel.app>
 - Dépôt : <https://github.com/mandaniainarandriambinintsoa/orchestra-ai-agency-demo>
-
-Le déploiement reste volontairement en mode démonstration. Supabase est connecté,
-mais les workflows n8n et les effets externes restent désactivés.
+- Workflow qualification n8n : `gNn5pZQBbYUNMoiA`
+- Workflow conversation Orchestra : `Uz48z7Zs6hoPVx4e`

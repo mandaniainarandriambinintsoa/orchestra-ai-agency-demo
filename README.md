@@ -11,7 +11,7 @@ configuré ou réellement vérifié.
 
 | Périmètre | État |
 | --- | --- |
-| Dashboard responsive et navigation | Fonctionnel localement |
+| Dashboard responsive et navigation | Fonctionnel localement et sur Vercel |
 | Vue d'ensemble et graphiques | Données de démonstration |
 | Recherche et filtres CRM | Fonctionnels sur données locales |
 | Conversations, rendez-vous, relances | Interfaces de démonstration |
@@ -20,7 +20,7 @@ configuré ou réellement vérifié.
 | API de qualification | Résultat local en mode démo ; adaptateur n8n préparé |
 | Schéma PostgreSQL | Migration versionnée et appliquée au projet Supabase `n8n` |
 | Supabase distant | 12 tables `orchestra_*`, RLS forcé, accès navigateur révoqué |
-| GitHub public et Vercel | Non publiés, accord propriétaire requis |
+| GitHub public et Vercel | Publiés et vérifiés le 10 novembre 2026 |
 
 ## Stack
 
@@ -98,9 +98,8 @@ docs/                     Audit, architecture et design system
 
 ## Publication
 
-Le dépôt public et le déploiement Vercel seront réalisés uniquement après :
+- Application : <https://orchestra-ai-agency-demo.vercel.app>
+- Dépôt : <https://github.com/mandaniainarandriambinintsoa/orchestra-ai-agency-demo>
 
-1. validation locale complète ;
-2. création d'une base Supabase dédiée ;
-3. revue des secrets et données ;
-4. autorisation explicite du propriétaire.
+Le déploiement reste volontairement en mode démonstration. Supabase est connecté,
+mais les workflows n8n et les effets externes restent désactivés.

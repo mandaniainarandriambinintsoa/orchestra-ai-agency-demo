@@ -209,12 +209,11 @@ sequenceDiagram
 
 ## 13. Déploiement
 
-1. vérifier lint, typecheck, tests et build ;
-2. créer une base Supabase dédiée et appliquer les migrations après autorisation ;
-3. configurer les variables Vercel en mode démo ;
-4. déployer une prévisualisation privée ;
-5. tester les pages, API et protections ;
-6. rendre public uniquement après accord explicite.
+1. lint, typecheck, tests et build vérifiés ;
+2. migration isolée appliquée au projet Supabase `n8n` après autorisation ;
+3. variables Supabase configurées dans Vercel, secret serveur marqué sensible ;
+4. déploiement public réalisé en mode démonstration ;
+5. pages, API de santé et interactions desktop/mobile vérifiées en production.
 
 ## 14. Limites actuelles
 
@@ -225,7 +224,8 @@ sequenceDiagram
 - aucune authentification opérateur ;
 - aucune synchronisation Calendar ou Gmail réelle ;
 - aucun envoi de relance ;
-- aucune validation navigateur ou déploiement Vercel encore réalisée.
+- les données métier affichées restent simulées malgré le déploiement Vercel et
+  la connexion Supabase vérifiés.
 
 ## 15. Passage en production
 

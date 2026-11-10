@@ -56,6 +56,11 @@ function getWebhookConfig(path: string | undefined) {
   return { endpoint, apiKey };
 }
 
+export function assertN8nChatConfigured() {
+  const env = getServerEnv();
+  getWebhookConfig(env.N8N_CHAT_WEBHOOK_PATH);
+}
+
 async function postWebhook(path: string | undefined, payload: unknown, correlationId: string) {
   const { endpoint, apiKey } = getWebhookConfig(path);
   const response = await fetch(endpoint, {

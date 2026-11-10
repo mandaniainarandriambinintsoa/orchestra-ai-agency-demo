@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { apiError, rejectOversizedRequest, rejectRateLimited } from "@/lib/http";
 import { getOrganizationId, toIsoNow } from "@/lib/orchestra";
-import { chatInputSchema, runConversation } from "@/lib/services/n8n-service";
+import { assertN8nChatConfigured, chatInputSchema, runConversation } from "@/lib/services/n8n-service";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
 
   try {
     const input = chatInputSchema.parse(await request.json());
+    assertN8nChatConfigured();
     const organizationId = await getOrganizationId();
     const supabase = createServiceClient();
 

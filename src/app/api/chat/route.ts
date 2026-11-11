@@ -5,6 +5,8 @@ import { getOrganizationId, toIsoNow } from "@/lib/orchestra";
 import { assertN8nChatConfigured, chatInputSchema, runConversation } from "@/lib/services/n8n-service";
 import { createServiceClient } from "@/lib/supabase/server";
 
+export const maxDuration = 150;
+
 export async function POST(request: Request) {
   const rejection = rejectOversizedRequest(request) ?? rejectRateLimited(request, "chat", 20);
   if (rejection) return rejection;

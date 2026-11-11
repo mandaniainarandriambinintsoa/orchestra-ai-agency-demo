@@ -61,7 +61,12 @@ export function assertN8nChatConfigured() {
   getWebhookConfig(env.N8N_CHAT_WEBHOOK_PATH);
 }
 
-async function postWebhook(path: string | undefined, payload: unknown, correlationId: string) {
+async function postWebhook(
+  path: string | undefined,
+  payload: unknown,
+  correlationId: string,
+  timeoutMs = 30_000,
+) {
   const { endpoint, apiKey } = getWebhookConfig(path);
   const response = await fetch(endpoint, {
     method: "POST",
@@ -72,7 +77,7 @@ async function postWebhook(path: string | undefined, payload: unknown, correlati
     },
     body: JSON.stringify(payload),
     cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) throw new Error(`N8N_HTTP_${response.status}`);
   return response.json() as Promise<unknown>;
@@ -99,7 +104,7 @@ export async function runConversation(
 ) {
   const env = getServerEnv();
   return chatResponseSchema.parse(
-    await postWebhook(env.N8N_CHAT_WEBHOOK_PATH, input, correlationId),
+    await postWebhook(env.N8N_CHAT_WEBHOOK_PATH, input, correlationId, 120_000),
   );
 }
 

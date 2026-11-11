@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orchestra — Architecture et dossier de livraison</title>
+  <style>
+    :root {
+      --ink: #171916;
+      --muted: #5f645d;
+      --line: #dfe3dc;
+      --soft: #f5f7f3;
+      --accent: #3e5a3b;
+      --ok: #2f633a;
+      --warn: #7a5d22;
+    }
+
+    * { box-sizing: border-box; }
+
+    @page {
+      size: A4;
+      margin: 18mm 18mm 17mm;
+      @bottom-left {
+        content: "Orchestra — Architecture de livraison";
+        color: #767b74;
+        font: 8pt Arial, sans-serif;
+      }
+      @bottom-right {
+        content: counter(page) " / " counter(pages);
+        color: #767b74;
+        font: 8pt Arial, sans-serif;
+      }
+    }
+
+    html { background: #eceeeb; }
+    body {
+      width: 210mm;
+      margin: 0 auto;
+      background: white;
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    main { padding: 18mm; }
+    section { margin: 0 0 13mm; }
+    section:last-child { margin-bottom: 0; }
+    .page-break { break-before: page; }
+    .avoid-break, table, .flow, .callout { break-inside: avoid; }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 150mm;
+      margin-bottom: 8mm;
+      font-size: 31pt;
+      font-weight: 620;
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+    }
+    h2 {
+      margin-bottom: 5mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 1px solid var(--line);
+      font-size: 20pt;
+      font-weight: 620;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+    }
+    h3 {
+      margin-bottom: 2mm;
+      font-size: 12.5pt;
+      font-weight: 650;
+      line-height: 1.3;
+    }
+    p { margin-bottom: 3mm; }
+    ul, ol { margin: 2mm 0 4mm; padding-left: 5.5mm; }
+    li { margin-bottom: 1.4mm; }
+    strong { font-weight: 650; }
+    a { color: var(--accent); text-decoration-thickness: 0.6px; text-underline-offset: 2px; }
+    code {
+      padding: 0.3mm 1mm;
+      border: 1px solid #e4e7e1;
+      border-radius: 2mm;
+      background: var(--soft);
+      font: 8.8pt "Cascadia Mono", Consolas, monospace;
+    }
+
+    .cover {
+      min-height: 255mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      font-size: 12pt;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-mark {
+      width: 9mm;
+      height: 9mm;
+      display: grid;
+      place-items: center;
+      border-radius: 2.5mm;
+      background: var(--ink);
+      color: white;
+      font-size: 8.5pt;
+    }
+    .eyebrow {
+      margin-bottom: 4mm;
+      color: var(--accent);
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 148mm;
+      color: #3f443e;
+      font-size: 13pt;
+      line-height: 1.55;
+    }
+    .cover-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm 12mm;
+      padding-top: 7mm;
+      border-top: 1px solid var(--ink);
+      font-size: 9pt;
+    }
+    .cover-meta span, .meta-label {
+      display: block;
+      margin-bottom: 1mm;
+      color: var(--muted);
+      font-size: 7.8pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .summary-grid, .two-col, .three-col {
+      display: grid;
+      gap: 5mm;
+    }
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stat {
+      padding: 4mm 0;
+      border-top: 1px solid var(--line);
+    }
+    .stat strong {
+      display: block;
+      margin-bottom: 1mm;
+      font-size: 15pt;
+    }
+    .stat span { color: var(--muted); font-size: 8.8pt; }
+
+    .callout {
+      margin: 5mm 0;
+      padding: 4mm 5mm;
+      border-left: 2px solid var(--accent);
+      background: var(--soft);
+    }
+    .callout p:last-child { margin-bottom: 0; }
+    .note { color: var(--muted); font-size: 8.8pt; }
+
+    table {
+      width: 100%;
+      margin: 3mm 0 6mm;
+      border-collapse: collapse;
+      font-size: 8.8pt;
+    }
+    th, td {
+      padding: 2.6mm 2.3mm;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      color: var(--muted);
+      font-size: 7.6pt;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .status {
+      display: inline-block;
+      white-space: nowrap;
+      font-weight: 650;
+    }
+    .status.ok { color: var(--ok); }
+    .status.guard { color: var(--warn); }
+
+    .architecture {
+      margin: 5mm 0 7mm;
+      padding: 6mm;
+      border: 1px solid var(--line);
+      background: #fbfcfa;
+    }
+    .arch-row {
+      display: grid;
+      grid-template-columns: 31mm 7mm 38mm 7mm 38mm 7mm 38mm;
+      align-items: stretch;
+      justify-content: center;
+      gap: 1.5mm;
+    }
+    .arch-box {
+      min-height: 26mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3mm;
+      border: 1px solid #cfd5cc;
+      background: white;
+      text-align: center;
+    }
+    .arch-box strong { font-size: 9.2pt; }
+    .arch-box small { margin-top: 1mm; color: var(--muted); font-size: 7.4pt; line-height: 1.35; }
+    .arrow { display: grid; place-items: center; color: #7e867a; font-size: 14pt; }
+    .arch-subrow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4mm;
+      margin-top: 4mm;
+    }
+    .arch-subrow .arch-box { min-height: 20mm; }
+
+    .flow {
+      margin: 4mm 0 7mm;
+      counter-reset: step;
+    }
+    .flow-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 10mm 1fr;
+      gap: 3mm;
+      padding: 0 0 4mm;
+    }
+    .flow-step::before {
+      counter-increment: step;
+      content: counter(step);
+      width: 8mm;
+      height: 8mm;
+      display: grid;
+      place-items: center;
+      border: 1px solid #bfc6bb;
+      border-radius: 50%;
+      background: white;
+      color: var(--accent);
+      font-size: 8pt;
+      font-weight: 700;
+      z-index: 1;
+    }
+    .flow-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 3.8mm;
+      top: 8mm;
+      bottom: 0;
+      border-left: 1px solid var(--line);
+    }
+    .flow-step p { margin: 0; color: var(--muted); font-size: 9pt; }
+
+    .layer {
+      padding: 4mm;
+      border-top: 2px solid var(--ink);
+      background: var(--soft);
+    }
+    .layer p { margin: 0; color: var(--muted); font-size: 8.7pt; }
+
+    .data-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin: 4mm 0 7mm;
+    }
+    .data-group {
+      padding: 4mm;
+      border: 1px solid var(--line);
+    }
+    .data-group p { margin-bottom: 0; color: var(--muted); font-size: 8.6pt; }
+    .data-group code { display: inline-block; margin: 0.6mm 0.4mm 0.6mm 0; }
+
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+    .checklist li {
+      position: relative;
+      padding-left: 5mm;
+    }
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .small { font-size: 8.7pt; }
+    .muted { color: var(--muted); }
+
+    @media print {
+      html, body { background: white; }
+      body { width: auto; }
+      main { padding: 0; }
+      a { color: var(--ink); text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="cover">
+      <div>
+        <div class="brand"><span class="brand-mark">O</span> Orchestra</div>
+      </div>
+      <div>
+        <p class="eyebrow">Dossier de livraison technique</p>
+        <h1>Architecture du prototype SaaS multi-agents IA</h1>
+        <p class="lead">
+          Une application démontrable de bout en bout pour qualifier des prospects,
+          piloter des conversations, préparer les rendez-vous, générer des relances
+          et gérer le stock d’un commerce.
+        </p>
+      </div>
+      <div class="cover-meta">
+        <div><span>Version</span>1.0 — prototype opérationnel</div>
+        <div><span>Date</span>11 novembre 2026</div>
+        <div><span>Application</span><a href="https://orchestra-ai-agency-demo.vercel.app">orchestra-ai-agency-demo.vercel.app</a></div>
+        <div><span>Dépôt</span><a href="https://github.com/mandaniainarandriambinintsoa/orchestra-ai-agency-demo">GitHub public</a></div>
+      </div>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">01 — Synthèse</p>
+      <h2>Ce qui a été livré</h2>
+      <p>
+        Orchestra transforme le brief initial en un produit cohérent plutôt qu’en une collection
+        d’écrans statiques. L’interface Next.js orchestre les parcours, Supabase conserve l’état
+        métier et n8n Manda exécute les tâches IA et les intégrations externes côté serveur.
+      </p>
+
+      <div class="summary-grid">
+        <div class="stat"><strong>5 parcours métier</strong><span>Qualification, conversation, rendez-vous, relance et stock.</span></div>
+        <div class="stat"><strong>3 workflows n8n</strong><span>Qualification, agent conversationnel et personnalisation des relances.</span></div>
+        <div class="stat"><strong>12 tables isolées</strong><span>Schéma Supabase préfixé <code>orchestra_</code>, avec RLS forcé.</span></div>
+        <div class="stat"><strong>8 tests E2E</strong><span>Parcours validés sur profils desktop et mobile.</span></div>
+      </div>
+
+      <table>
+        <thead><tr><th>Fonction</th><th>Résultat livré</th><th>État vérifié</th></tr></thead>
+        <tbody>
+          <tr><td>Qualification des prospects</td><td>Formulaire, persistance, analyse IA, score, intérêt, sujet, résumé et prochaine action.</td><td><span class="status ok">Opérationnel</span></td></tr>
+          <tr><td>Conversation IA</td><td>Trois scénarios jouables : suivi de colis, cabinet dentaire et garage.</td><td><span class="status ok">Opérationnel</span></td></tr>
+          <tr><td>Rendez-vous</td><td>Consultation des disponibilités et création d’un événement Google Calendar depuis l’agent.</td><td><span class="status ok">Testé en réel</span></td></tr>
+          <tr><td>Relances</td><td>Génération manuelle ou quotidienne, message personnalisé conservé en attente de validation.</td><td><span class="status ok">Opérationnel</span></td></tr>
+          <tr><td>Gestion de stock</td><td>Création, modification, archivage, entrée/sortie atomique et prévention du stock négatif.</td><td><span class="status ok">Opérationnel</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <h3>Principe directeur</h3>
+        <p>Le navigateur ne contacte jamais directement Supabase avec un rôle privilégié, n8n, Gmail ou Google Calendar. Toutes les actions sensibles passent par le backend Next.js.</p>
+      </div>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">02 — Vue d’ensemble</p>
+      <h2>Architecture applicative</h2>
+      <p>
+        L’architecture reste volontairement simple : un frontend et un backend regroupés dans
+        Next.js, une base PostgreSQL managée par Supabase et une couche d’automatisation n8n.
+        Cette séparation donne à chaque composant une responsabilité claire.
+      </p>
+
+      <div class="architecture">
+        <div class="arch-row">
+          <div class="arch-box"><strong>Utilisateur</strong><small>Navigateur desktop ou mobile</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>Interface Next.js</strong><small>Dashboard, formulaires et états interactifs</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>API Next.js</strong><small>Validation, quotas et services métier</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>Services protégés</strong><small>Supabase et n8n Manda</small></div>
+        </div>
+        <div class="arch-subrow">
+          <div class="arch-box"><strong>Supabase / PostgreSQL</strong><small>Prospects, messages, relances, stock et traces</small></div>
+          <div class="arch-box"><strong>n8n Manda</strong><small>Agents IA, mémoire de conversation et orchestration</small></div>
+          <div class="arch-box"><strong>Google</strong><small>Calendar et Gmail via credentials n8n</small></div>
+        </div>
+      </div>
+
+      <div class="three-col">
+        <div class="layer"><h3>Présentation</h3><p>Next.js 16, React 19, Tailwind CSS 4, Tabler Icons et Recharts.</p></div>
+        <div class="layer"><h3>Application</h3><p>Route Handlers, services métier, schémas Zod et contrats d’erreurs stables.</p></div>
+        <div class="layer"><h3>Persistance</h3><p>Supabase/PostgreSQL, migrations versionnées, contraintes et fonction SQL atomique.</p></div>
+      </div>
+
+      <h3>Responsabilités par composant</h3>
+      <table>
+        <thead><tr><th>Composant</th><th>Responsabilité</th><th>Ne fait pas</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>Collecter les entrées, afficher l’état et guider l’utilisateur.</td><td>Ne contient aucun secret et ne décide pas seul des autorisations.</td></tr>
+          <tr><td>Backend Next.js</td><td>Valider, limiter, appeler les services et normaliser les réponses.</td><td>N’expose pas les erreurs internes ni les credentials.</td></tr>
+          <tr><td>Supabase</td><td>Conserver l’état métier, les relations et la traçabilité.</td><td>N’est pas directement accessible par les visiteurs avec des droits d’écriture.</td></tr>
+          <tr><td>n8n</td><td>Exécuter les agents IA et appeler Calendar/Gmail.</td><td>N’est jamais appelé directement depuis le navigateur.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">03 — Parcours métier</p>
+      <h2>Qualification automatique des prospects</h2>
+      <p>
+        Le formulaire ne produit pas seulement une nouvelle ligne CRM. La demande est envoyée à
+        un agent n8n qui rend une qualification structurée, ensuite validée avant persistance.
+      </p>
+
+      <div class="flow">
+        <div class="flow-step"><div><h3>Saisie</h3><p>Nom, email, entreprise et demande sont contrôlés par un schéma Zod avant toute écriture.</p></div></div>
+        <div class="flow-step"><div><h3>Création du prospect</h3><p>Supabase crée le prospect dans l’organisation Orchestra avec un statut intermédiaire et une trace d’activité.</p></div></div>
+        <div class="flow-step"><div><h3>Qualification IA</h3><p>Le backend appelle le webhook n8n authentifié avec un identifiant de corrélation.</p></div></div>
+        <div class="flow-step"><div><h3>Réponse structurée</h3><p>L’agent retourne intérêt, niveau, sujet, score, confiance, résumé, tags et prochaine action.</p></div></div>
+        <div class="flow-step"><div><h3>Mise à jour et traçabilité</h3><p>Le CRM est enrichi, l’exécution est journalisée et l’interface présente immédiatement le résultat.</p></div></div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <h3>Comportement nominal</h3>
+          <ul class="checklist">
+            <li>Score borné entre 0 et 100.</li>
+            <li>Niveaux d’intérêt limités à high, medium ou low.</li>
+            <li>Prospect qualifié si l’intérêt est confirmé et le score atteint 50.</li>
+            <li>Résultat n8n revalidé côté serveur avant enregistrement.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Comportement en cas d’échec</h3>
+          <ul>
+            <li>Le prospect reste enregistré.</li>
+            <li>L’échec de qualification est tracé.</li>
+            <li>L’API répond avec un statut différé et un message compréhensible.</li>
+            <li>Aucune erreur interne n’est exposée au navigateur.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">04 — Agent conversationnel</p>
+      <h2>Conversation, calendrier et email</h2>
+      <p>
+        Un workflow n8n V4 centralise les trois scénarios. Il conserve la mémoire de session,
+        interroge les outils autorisés et renvoie une réponse JSON stable au backend.
+      </p>
+
+      <table>
+        <thead><tr><th>Scénario</th><th>Capacités</th><th>Intégrations</th></tr></thead>
+        <tbody>
+          <tr><td>Colis</td><td>Valider un numéro, calculer un statut fictif et proposer un récapitulatif.</td><td>Outil métier interne, Gmail sur confirmation.</td></tr>
+          <tr><td>Dentiste</td><td>Identifier le soin, proposer des créneaux, confirmer le nom et l’email.</td><td>Google Calendar et Gmail.</td></tr>
+          <tr><td>Garagiste</td><td>Identifier l’intervention et le véhicule, proposer puis réserver un créneau.</td><td>Google Calendar et Gmail.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="flow">
+        <div class="flow-step"><div><h3>Session stable</h3><p>Le frontend fournit un identifiant de session ; la conversation et chaque message sont persistés dans Supabase.</p></div></div>
+        <div class="flow-step"><div><h3>Mémoire n8n</h3><p>L’agent retrouve le contexte récent et évite de redemander les informations déjà fournies.</p></div></div>
+        <div class="flow-step"><div><h3>Outil adapté</h3><p>Selon le scénario, l’agent consulte le statut colis ou les disponibilités réelles du calendrier.</p></div></div>
+        <div class="flow-step"><div><h3>Confirmation explicite</h3><p>Une adresse email ne peut pas être inventée ; le rendez-vous ou l’envoi est précédé d’un récapitulatif et d’un accord.</p></div></div>
+        <div class="flow-step"><div><h3>Réponse normalisée</h3><p>Le backend reçoit <code>reply</code>, <code>sessionId</code>, <code>scenario</code> et <code>generatedAt</code>, puis conserve la réponse.</p></div></div>
+      </div>
+
+      <div class="callout">
+        <h3>Validation réalisée</h3>
+        <p>Le suivi colis, l’envoi Gmail, la consultation des disponibilités et la création d’un rendez-vous Calendar ont été testés en conditions réelles. L’événement créé pour le test a ensuite été supprimé.</p>
+      </div>
+      <p class="note">
+        Point de vigilance : avant une exploitation client sans supervision, l’enchaînement automatique « création du rendez-vous puis email » doit être rendu déterministe dans un seul outil n8n et couvert par un test contractuel dédié.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">05 — Relances et stock</p>
+      <h2>Automatiser sans perdre le contrôle</h2>
+
+      <div class="two-col">
+        <div>
+          <h3>Relances personnalisées</h3>
+          <p>Une relance peut être générée depuis le dashboard ou par le cron quotidien Vercel.</p>
+          <ul>
+            <li>Le prospect et son contexte sont relus côté serveur.</li>
+            <li>n8n génère des variantes email, InMail et connexion.</li>
+            <li>La variante email est stockée avec le statut <code>pending_approval</code>.</li>
+            <li>Le cron cible au maximum cinq prospects inactifs depuis trois jours.</li>
+            <li>Les prospects ayant déjà une relance ouverte sont exclus.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Gestion du stock</h3>
+          <p>Le module représente un commerce informatique et propose un CRUD complet.</p>
+          <ul>
+            <li>Création avec SKU unique par organisation.</li>
+            <li>Modification du nom, seuil, description et prix.</li>
+            <li>Archivage logique pour préserver l’historique.</li>
+            <li>Entrées et sorties accompagnées d’un motif.</li>
+            <li>Signalement des produits sous leur seuil minimal.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Ajustement de stock atomique</h3>
+      <p>
+        L’ajustement n’est pas composé de deux appels indépendants. Une fonction PostgreSQL met à
+        jour la quantité et écrit le mouvement dans une même transaction. Elle refuse une variation
+        nulle, un motif invalide, un produit inactif et toute sortie qui rendrait le stock négatif.
+      </p>
+      <div class="architecture">
+        <div class="arch-row" style="grid-template-columns: 35mm 7mm 42mm 7mm 42mm 7mm 35mm">
+          <div class="arch-box"><strong>Action utilisateur</strong><small>+ / − avec motif</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>API stock</strong><small>Validation et correlationId</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>Fonction SQL</strong><small>Vérification et transaction</small></div>
+          <div class="arrow">→</div>
+          <div class="arch-box"><strong>État cohérent</strong><small>Produit + mouvement</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">06 — Données</p>
+      <h2>Modèle Supabase multi-tenant</h2>
+      <p>
+        Les objets applicatifs sont préfixés <code>orchestra_</code> afin d’isoler le prototype dans
+        le projet Supabase partagé. Toutes les entités métier portent un <code>organization_id</code>.
+      </p>
+
+      <div class="data-map">
+        <div class="data-group"><h3>Organisation</h3><p><code>orchestra_organizations</code> <code>orchestra_organization_members</code></p></div>
+        <div class="data-group"><h3>CRM</h3><p><code>orchestra_prospects</code> <code>orchestra_activity_logs</code></p></div>
+        <div class="data-group"><h3>Conversation</h3><p><code>orchestra_conversations</code> <code>orchestra_messages</code> <code>orchestra_appointments</code></p></div>
+        <div class="data-group"><h3>Automatisation</h3><p><code>orchestra_agents</code> <code>orchestra_workflow_executions</code> <code>orchestra_follow_ups</code></p></div>
+        <div class="data-group"><h3>Commerce</h3><p><code>orchestra_products</code> <code>orchestra_stock_movements</code></p></div>
+        <div class="data-group"><h3>Traçabilité</h3><p>Identifiants de corrélation, statuts, horodatages et résumés non sensibles.</p></div>
+      </div>
+
+      <h3>Invariants encodés dans la base</h3>
+      <ul class="checklist">
+        <li>Clés étrangères composites empêchant les relations entre deux organisations.</li>
+        <li>RLS activé et forcé sur toutes les tables accessibles par l’application.</li>
+        <li>Aucune politique client accordée par défaut aux rôles navigateur.</li>
+        <li>Unicité des sessions conversationnelles et des SKU dans leur organisation.</li>
+        <li>Index sur les listes croissantes, l’activité, les statuts et les seuils de stock.</li>
+        <li>Clés de corrélation et d’idempotence prévues pour les effets rejouables.</li>
+      </ul>
+
+      <div class="callout">
+        <h3>Accès serveur uniquement</h3>
+        <p>La clé Supabase privilégiée reste dans l’environnement Vercel. Les visiteurs passent par les Route Handlers, qui appliquent le périmètre de l’organisation avant chaque lecture ou écriture.</p>
+      </div>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">07 — Sécurité</p>
+      <h2>Frontières et garde-fous</h2>
+
+      <table>
+        <thead><tr><th>Risque</th><th>Mesure implémentée</th><th>Effet</th></tr></thead>
+        <tbody>
+          <tr><td>Entrée invalide</td><td>Schémas Zod à l’entrée et à la sortie des webhooks.</td><td>Les objets inattendus sont rejetés avant propagation.</td></tr>
+          <tr><td>Corps excessif</td><td>Limite explicite de 16 Ko.</td><td>Réduit les abus et le travail inutile du serveur.</td></tr>
+          <tr><td>Appels répétés</td><td>Limites par action et par IP sur une fenêtre d’une minute.</td><td>Protège la démo contre les rafales simples.</td></tr>
+          <tr><td>Fuite de secrets</td><td>Credentials n8n et Supabase exclusivement côté serveur.</td><td>Le bundle navigateur ne contient aucune clé privilégiée.</td></tr>
+          <tr><td>Détournement de webhook</td><td>Origine n8n contrôlée et credential Header Auth centralisé.</td><td>Empêche de rediriger un appel vers un domaine arbitraire.</td></tr>
+          <tr><td>Appel bloqué</td><td>Délais maximum de 30 s, ou 120 s pour le chat.</td><td>Les requêtes longues ne restent pas ouvertes indéfiniment.</td></tr>
+          <tr><td>Erreur interne</td><td>Contrat d’erreur stable avec identifiant de corrélation.</td><td>Le client obtient une réponse utile sans détail sensible.</td></tr>
+          <tr><td>Suppression d’historique</td><td>Archivage logique des produits.</td><td>Les mouvements de stock restent interprétables.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Limites assumées du prototype</h3>
+      <ul>
+        <li>Il n’existe pas encore d’authentification opérateur ni de MFA.</li>
+        <li>La limitation de débit est locale à l’instance serverless, pas distribuée.</li>
+        <li>Le dashboard utilise une organisation de démonstration unique.</li>
+        <li>La relance est générée mais volontairement non envoyée automatiquement.</li>
+        <li>Une exploitation commerciale doit ajouter supervision, sauvegardes testées et politique de rétention RGPD.</li>
+      </ul>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">08 — Déploiement et qualité</p>
+      <h2>Une livraison vérifiable</h2>
+
+      <div class="two-col">
+        <div>
+          <h3>Chaîne de livraison</h3>
+          <ol>
+            <li>Code versionné dans un dépôt GitHub public.</li>
+            <li>Migrations Supabase conservées avec le projet.</li>
+            <li>Variables sensibles configurées dans Vercel.</li>
+            <li>Déploiement automatique de la branche principale.</li>
+            <li>Vérification du site public après chaque modification.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>Contrôles exécutés</h3>
+          <ul class="checklist">
+            <li>ESLint sans erreur.</li>
+            <li>TypeScript strict et génération des types Next.js.</li>
+            <li>Build de production Next.js réussi.</li>
+            <li>8 tests Playwright réussis sur desktop et mobile.</li>
+            <li>Tests live des webhooks, de la base, du stock et des intégrations.</li>
+          </ul>
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>Parcours E2E</th><th>Ce qui est contrôlé</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td>Chargement, navigation utile et menu mobile.</td></tr>
+          <tr><td>Prospect</td><td>Ouverture du formulaire, saisie et restitution de la qualification.</td></tr>
+          <tr><td>Conversation</td><td>Envoi d’un message et affichage de la réponse agent.</td></tr>
+          <tr><td>Stock</td><td>Ajustement d’une quantité sans rechargement complet de la page.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Exploitation</h3>
+      <p>
+        Le cron Vercel appelle chaque jour la route de relance avec un secret serveur. Le endpoint de
+        santé permet de contrôler la disponibilité générale sans révéler la configuration. Les appels
+        importants transportent un identifiant de corrélation afin de rapprocher une réponse API,
+        une exécution n8n et une trace Supabase.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <p class="eyebrow">09 — Conclusion</p>
+      <h2>Valeur du prototype</h2>
+      <p>
+        Orchestra démontre la capacité à transformer cinq besoins métier en un système unifié :
+        l’interface collecte et supervise, la base garantit la cohérence, et les agents n8n exécutent
+        les tâches IA ou les intégrations externes. L’ensemble est déployé, testable et documenté.
+      </p>
+
+      <div class="callout">
+        <h3>Ce que ce dossier apporte en plus</h3>
+        <p>
+          Il rend visibles les décisions techniques derrière la démo : séparation des responsabilités,
+          contrats d’API, modèle de données, sécurité, comportement en échec et chemin de passage en production.
+        </p>
+      </div>
+
+      <h3>Étapes recommandées avant production client</h3>
+      <ol>
+        <li>Ajouter une authentification opérateur, le MFA et des politiques RLS par organisation.</li>
+        <li>Remplacer la limitation locale par un quota partagé et durable.</li>
+        <li>Regrouper la réservation Calendar et l’email de confirmation dans une action n8n atomique et idempotente.</li>
+        <li>Ajouter des tests contractuels des webhooks et des tests E2E sur un environnement isolé.</li>
+        <li>Mettre en place alertes, métriques, sauvegardes restaurables et règles de rétention.</li>
+      </ol>
+
+      <div style="margin-top: 18mm; padding-top: 5mm; border-top: 1px solid var(--line);" class="small muted">
+        <p><strong>Document généré à partir de l’état du dépôt au 11 novembre 2026.</strong></p>
+        <p>Les identifiants internes, URLs privées et valeurs de credentials ont volontairement été exclus.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

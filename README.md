@@ -79,4 +79,9 @@ une fonction SQL atomique qui refuse les quantités négatives.
 - Application : <https://orchestra-ai-agency-demo.vercel.app>
 - Dépôt : <https://github.com/mandaniainarandriambinintsoa/orchestra-ai-agency-demo>
 - Workflow qualification n8n : `gNn5pZQBbYUNMoiA`
-- Workflow conversation Orchestra : `Uz48z7Zs6hoPVx4e`
+- Workflow conversation Orchestra V4 : `mKyiaQylF1ieKwuM`
+
+## Dossier de livraison
+
+- [Architecture — PDF](docs/livrables/orchestra-architecture-livraison.pdf)
+- [Architecture — source HTML](docs/livrables/orchestra-architecture-livraison.html)

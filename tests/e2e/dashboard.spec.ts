@@ -4,6 +4,8 @@ test("dashboard and navigation remain usable", async ({ page }, testInfo) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Tout ce qui mérite votre attention." })).toBeVisible();
   await expect(page.getByText("Pilotage en temps réel")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Agents & workflows" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Paramètres" })).toHaveCount(0);
 
   if (testInfo.project.name === "mobile") {
     await page.getByRole("button", { name: "Ouvrir le menu" }).click();

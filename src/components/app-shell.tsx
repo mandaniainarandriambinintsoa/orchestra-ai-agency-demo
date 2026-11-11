@@ -5,16 +5,13 @@ import { usePathname } from "next/navigation";
 import { useState, type ComponentType, type ReactNode } from "react";
 import type { IconProps } from "@tabler/icons-react";
 import {
-  IconAdjustments,
   IconBox,
   IconCalendarEvent,
   IconChartDots3,
-  IconChevronRight,
   IconLayoutDashboard,
   IconMenu2,
   IconMessages,
   IconRefresh,
-  IconRobot,
   IconUsers,
   IconX,
 } from "@tabler/icons-react";
@@ -40,14 +37,7 @@ const navigation: { label: string; items: NavItem[] }[] = [
     label: "Automatisation",
     items: [
       { href: "/dashboard/follow-ups", label: "Relances", icon: IconRefresh },
-      { href: "/dashboard/agents", label: "Agents & workflows", icon: IconRobot },
       { href: "/dashboard/stock", label: "Stock", icon: IconBox },
-    ],
-  },
-  {
-    label: "Système",
-    items: [
-      { href: "/dashboard/settings", label: "Paramètres", icon: IconAdjustments },
     ],
   },
 ];
@@ -124,7 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="min-w-0">
         <header className="hidden h-[74px] items-center justify-between border-b border-line bg-panel px-[clamp(24px,4vw,62px)] lg:flex">
           <span className="text-[10px] uppercase tracking-[0.13em] text-[#84907c]">Espace de travail <span className="px-2 text-[#adb6a8]">/</span> <strong className="font-semibold text-[#3e513b]">{current?.label ?? "Orchestra"}</strong></span>
-          <Link href="/dashboard/settings" className="flex min-h-11 items-center gap-2 text-[11px] text-[#566a50]">Mode démo <IconChevronRight size={15} stroke={1.6} /></Link>
+          <span className="text-[11px] font-medium text-[#566a50]">Mode démo</span>
         </header>
 
         <header className="sticky top-0 z-20 flex h-[70px] items-center justify-between border-b border-line bg-panel px-5 lg:hidden">
